@@ -1,0 +1,145 @@
+\documentclass{article}
+\usepackage[top=1in,left=1in,right=1in,bottom=0.5in]{geometry} % Space from the sides
+\geometry{letterpaper}               % ... or a4paper or a5paper or ...
+\usepackage[parfill]{parskip}        % Begin paragraph w/out indent
+\geometry{portrait}               % For ALL portrait pages'
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{pdflscape}               % \begin{landscape} ... \end{landscape}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{placeins} % \FloatBarrier
+\usepackage{array}
+\usepackage{verbatim}
+\hypersetup{
+colorlinks=true,                 % false: boxed links; true: colored links
+linkcolor=blue,                  % color of internal links
+citecolor=black                  % color of citation links
+%linkedbordercolor=red,          % color of box around link
+}  
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Document Title and Author
+\title{Metabolomics Data Analysis}
+\author{
+Elmira Torabzadeh \\
+{\tt <elmira@statlab.bio5.org>}}
+
+\begin{document}
+\maketitle
+% \tableofcontents
+% \newpage
+
+
+<<chunk_options, echo=FALSE>>=
+# Code Chunk: chunk_options
+#set the default time zone
+Sys.setenv(TZ="America/Phoenix") 
+# set basic knitr options which apply to all chunk codes
+opts_chunk$set(echo=FALSE, message=FALSE, warning = FALSE, cache = FALSE,comment="")
+
+# options(width=150) # This sets how wide the R printout can be.
+
+rm(list=ls())
+graphics.off()
+@
+
+<<load_libraries>>=
+
+# Code Chunk: load_libraries
+
+library(tidyr)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(car)
+library(xtable)
+library(xlsx)
+library(emmeans)
+library(kableExtra)
+library(plotly)
+
+# To install the edgeR package:
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("edgeR")
+
+# library(edgeR)
+# library(limma)
+# #for PCA plot;
+# library(devtools)
+# library(ggfortify)
+@
+
+
+
+<<reading_data>>=
+# Code Chunk: reading_data 
+
+
+raw.data <- read.xlsx("Data 060319 Copy of NCCU160_Gyamfi-Mouse-Metabolomics-Results_2019-05-29.xlsx",
+                      sheetIndex = 1,rowIndex=4:184)
+
+
+t.data <-data.frame(t(raw.data)) 
+rownames(t.data) <- NULL
+colnames(t.data) <- data.frame(lapply(t.data[1,], as.character), stringsAsFactors=FALSE)
+
+wide.dt <- t.data %>% slice(-1)
+colnames(wide.dt)[4] <- "Sample Name"
+colnames(wide.dt) <- gsub("-","_",colnames(wide.dt))
+
+wide.dt <- data.frame(lapply(wide.dt, droplevels))
+wide.dt <- data.frame(lapply(wide.dt,as.character),stringsAsFactors=FALSE)
+wide.dt <- cbind(wide.dt[,1:4], data.frame(lapply(wide.dt[,5:176], as.numeric)))
+# colnames(wide.dt) <- gsub("X","",colnames(wide.dt))
+# str(wide.dt)
+
+@
+
+
+<<plots>>=
+
+# # interaction plot
+# lsmip(model.lmer, photo.race~R.E,
+#       ylab=paste0("Estimated ",q," Score"), xlab="Participant Race")
+
+p <- ggplot(aes_string(y = "X10_Hydroxydecanoate", x = "Drug", 
+                       fill = "Mouse.Type"), data = wide.dt) + 
+  geom_boxplot() + geom_point(aes_string(shape="Mouse.Type", colour="Mouse.Type")) +
+ facet_wrap(~as.factor(eval(parse(text="Gender")))) +
+  
+  # xlab(input$xlab) +
+  # ylab(p.ylab) +
+  # ggtitle(input$plot_title) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, size=8),
+        # size = input$title_size
+        # axis.text = element_text(size = input$axis_text_size),
+        # axis.title = element_text(size = input$axis_label_size),
+        # panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.text=element_text(size=10))
+
+p
+
+
+
+@
+
+
+
+
+
+
+
+
+\end{document}
